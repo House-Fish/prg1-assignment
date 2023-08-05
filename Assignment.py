@@ -20,36 +20,28 @@ def generate_menu():
         menu += f"[{option}]\t{description} \n"
     return menu 
 
+def generate_line(data_list, spacing_list, align_list):
+    line = ""
+    for data, spacing, align in zip(data_list, spacing_list, align_list):
+        if align == "<":
+            line += data.ljust(spacing)
+        elif align == ">":
+            line += " " + data.rjust(spacing) + " "
+    return line
+
 def get_option():
     while True:
         option = input("Enter your option: ")
-        if is_valid_option(option):
+        if option.isdigit() and 0 <= int(option) <= len(MENU_DESCRIPTIONS) - 1:
             return int(option)
-
-def is_valid_option(option):
-    min_option, max_option = 0, len(MENU_DESCRIPTIONS)-1
-    if not(option.isdigit()):
-        print("Invalid option, should be a number.")
-        return False
-    elif not(min_option <= int(option) <= max_option):
-        print(f"Invalid option, should be between {min_option} and {max_option} inclusive.")
-        return False
-    return True
+        print("Invalid option, please enter a valid number between 0 and", len(MENU_DESCRIPTIONS) - 1)
 
 def get_percentage():
     while True:
         percentage = input("Enter the percentage required: ")
-        if is_valid_percentage(percentage):
+        if percentage.isdigit() and 0 <= float(percentage) <= 100:
             return float(percentage)
-
-def is_valid_percentage(percentage):
-    if not(percentage.isdigit()):
-        print("Invalid percentage, should be a number.")
-        return False
-    elif not(0 <= float(percentage) <= 100):
-        print(f"Invalid percentage, should be between 0 and 100 inclusive.")
-        return False
-    return True
+        print("Invalid percentage, please enter a valid number between 0 and 100")
 
 def get_file_name():
     while True:
@@ -59,14 +51,8 @@ def get_file_name():
         else:
             return file_name
 
-def generate_line(data_list, spacing_list, align_list):
-    line = ""
-    for data, spacing, align in zip(data_list, spacing_list, align_list):
-        if align == "<":
-            line += " " + data.ljust(spacing) 
-        elif align == ">":
-            line += data.rjust(spacing) + " "
-    return line
+def get_spacing(headers):
+    return [header_spacings[header] for header in headers]
 
 def calculate_percentage(total_lots, lots_available):
     return round(lots_available/total_lots * 100, 1) 
@@ -78,25 +64,34 @@ def is_valid_file(file_name):
     return isfile(file_name)
 
 def main():
+    global carpark_information, carpark_availability, header_spacings
     carpark_information = {}
     carpark_availability = {}
+    header_spacings = {}
     percentage_calculated = False
     
-    carpark_information_file_name = "carpark-information.csv"
+    cpi_file_name = "carpark-information.csv"
 
-    if not(is_valid_file(carpark_information_file_name)):
-        print(f"Invalid file name, {carpark_information_file_name} is not found.")
+    if not(is_valid_file(cpi_file_name)):
+        print(f"Invalid file name, {file_name} is not found.")
         return 
-    carpark_information_file = open(carpark_information_file_name, "r")
-    headers = carpark_information_file.readline().strip("\n").split(",")
-    for row in carpark_information_file:
-        items = row.strip("\n").split(",")
-        carpark_details = {}
-        carpark_number = items[0]
-        for item, header in zip(items[1:], headers[1:]):
-            carpark_details[header] = item
-        carpark_information[carpark_number] = carpark_details
 
+    with open(cpi_file_name, "r") as carpark_information_file: 
+        headers = carpark_information_file.readline().strip("\n").split(",")
+        header_spacings = {header: len(header) for header in headers}
+        for line in carpark_information_file:
+            line = line.strip("\n").split(",")
+            carpark_details = {}
+            carpark_number = line[0]
+            if len(carpark_number) > header_spacings[headers[0]]:
+                header_spacings[header[0]] = len(carpark_number)
+            for detail, header in zip(line[1:], headers[1:]):
+                carpark_details[header] = detail 
+                if len(detail) > header_spacings[header]:
+                    header_spacings[header] = len(detail)
+            carpark_information[carpark_number] = carpark_details
+
+    print(header_spacings)
     menu = generate_menu()
 
     while True:
@@ -104,40 +99,42 @@ def main():
         option = get_option()
         print(f"Option {option}: {MENU_DESCRIPTIONS[option]}")
 
-        if option < 4:
-            if option == 0: 
-                break
-            elif option == 1: 
-                print(f"Total Number of carparks in '{carpark_information_file_name}': " 
-                    + str(get_total_number(carpark_information)))
-            elif option == 2:
-                headers = ["Carpark Number", "Carpark Type", "Address"]
-                spacing = [15, 20, 20]
-                adjust = "<<<"
-                total_number = 0
-
-                print(generate_line(headers, spacing, adjust))
-                for carpark, carpark_details in carpark_information.items():
-                    if carpark_details["Carpark Type"] == "BASEMENT CAR PARK":
-                        line_data = [carpark]
-                        for header in headers[1:]:
-                            line_data.append(carpark_details[header])
-                        print(generate_line(line_data, spacing, adjust))
-                        total_number += 1
-                print(f"Total Number: {total_number}")
-            else:
-                carpark_availability_file_name = get_file_name()
-                carpark_availability_file = open(carpark_availability_file_name, "r")
+        if option == 0: 
+            break
+        elif option == 1: 
+            print(f"Total Number of carparks in '{cpi_file_name}': {str(get_total_number(carpark_information))}")
+        elif option == 2:
+            headers = ["Carpark Number", "Carpark Type", "Address"]
+            spacing = get_spacing(headers)
+            adjust = "<<<"
+            total_number = 0
+            print(generate_line(headers, spacing, adjust))
+            for carpark, carpark_details in carpark_information.items():
+                if carpark_details["Carpark Type"] == "BASEMENT CAR PARK":
+                    line_data = [carpark]
+                    for header in headers[1:]:
+                        line_data.append(carpark_details[header])
+                    print(generate_line(line_data, spacing, adjust))
+                    total_number += 1
+            print(f"Total Number: {total_number}")
+        elif option == 3:
+            cpa_file_name = get_file_name()
+            with open(cpa_file_name, "r") as carpark_availability_file:
                 timestamp = carpark_availability_file.readline().strip("\n")
                 headers = carpark_availability_file.readline().strip("\n").split(",")
-                for row in carpark_availability_file:
-                    items = row.strip("\n").split(",")
+                header_spacings.update({header: len(header) for header in headers})
+                for line in carpark_availability_file:
+                    line = line.strip("\n").split(",")
                     carpark_details = {}
-                    carpark_number = items[0]
-                    for item, header in zip(items[1:], headers[1:]):
-                        carpark_details[header] = item 
+                    carpark_number = line[0]
+                    if len(carpark_number) > header_spacings[headers[0]]:
+                        header_spacings[header[0]] = len(carpark_number)
+                    for detail, header in zip(line[1:], headers[1:]):
+                        carpark_details[header] = detail 
+                        if len(detail) > header_spacings[header]:
+                            header_spacings[header] = len(detail)
                     carpark_availability[carpark_number] = carpark_details
-                print(timestamp[:-2])
+            print(timestamp[:-2])
         elif carpark_availability != {}:
             if option == 4:
                 print(f"Total Number of Carparks in the File: {get_total_number(carpark_availability)}")
@@ -148,26 +145,28 @@ def main():
                         print(f"Carpark Number: {carpark_number}")
                         total_number += 1
                 print(f"Total Number: {total_number}")
-            else:
+            elif option < 10:
                 total_number = 0
 
                 if percentage_calculated == False:
+                    header_spacings.update({"Percentage": 10})
                     for carpark_number, carpark_details in carpark_availability.items():
                         total_lots = int(carpark_details["Total Lots"])
                         lots_available = int(carpark_details["Lots Available"])
                         if lots_available == 0:
                             carpark_details["Percentage"] = "0.0"
                         else:
-                            carpark_details["Percentage"] = str(calculate_percentage(total_lots, lots_available))
+                            percentage = str(calculate_percentage(total_lots, lots_available))
+                            carpark_details["Percentage"] = percentage 
+                            if len(percentage) > header_spacings["Percentage"]:
+                                header_spacings["Percentage"] = len(percentage)
                     percentage_calculated = True
 
                 if option == 6: 
-                    spacing = [15, 12, 16, 12]
                     headers = ["Carpark Number", "Total Lots", "Lots Available", "Percentage"]
+                    spacing = get_spacing(headers)
                     adjust = "<>>>"
-
                     percentage = get_percentage()
-
                     print(generate_line(headers, spacing, adjust))
                     for carpark_number, carpark_details in carpark_availability.items():
                         if float(carpark_details["Percentage"]) > percentage:
@@ -178,13 +177,11 @@ def main():
                             total_number += 1
                     print(f"Total Number: {total_number}")
                 else: 
-                    spacing = [15, 12, 16, 12, 10]
                     headers = ["Carpark Number", "Total Lots", "Lots Available", "Percentage", "Address"]
+                    spacing = get_spacing(headers)
                     adjust = "<>>><"
-
                     if option == 7:
                         percentage = get_percentage()
-
                         print(generate_line(headers, spacing, adjust))
                         for carpark_number, carpark_details in carpark_availability.items():
                             if float(carpark_details["Percentage"]) > percentage:
@@ -196,11 +193,8 @@ def main():
                                 total_number += 1
                         print(f"Total Number: {total_number}")
                     elif option == 8:
-                        output = ""
-
                         location = input("Enter the location: ")
-
-                        output += generate_line(headers, spacing, adjust) + "\n"
+                        output = generate_line(headers, spacing, adjust) + "\n"
                         for carpark_number, carpark_details in carpark_availability.items():
                             if carpark_information.get(carpark_number) != None:
                                 carpark_address = carpark_information[carpark_number]["Address"]
@@ -211,7 +205,6 @@ def main():
                                     line_data.append(carpark_address)
                                     output += generate_line(line_data, spacing, adjust) + "\n"
                                     total_number += 1
-
                         if total_number > 0:
                             print(output)
                         else:
@@ -228,27 +221,29 @@ def main():
                         for header in headers[1:4]:
                             print(f"{header}: {carpark_availability[most_lots_carpark_number][header]}")
                         print(f"{headers[4]}: {carpark_information[most_lots_carpark_number]["Address"]}")
-                    else:
-                        no_of_lines = 2
-                        file_name = "carpark-availability-with-address.csv"
-                        carpark_availability = dict(sorted(carpark_availability.items(), \
-                                                           key=lambda carpark: int(carpark[1]["Total Lots"])))
-                        if is_valid_file(file_name):
-                            print(f"Invalid option, {file_name} already exits")
-                            continue
-                        carpark_availability_address_file = open(file_name, "w", newline='')
-                        writer = csv.writer(carpark_availability_address_file)
-                        carpark_availability_address_file.write(timestamp + "\n")
-                        writer.writerow(headers)
-                        for carpark_number, carpark_details in carpark_availability.items():
-                            if carpark_information.get(carpark_number) != None:
-                                line = [carpark_number]
-                                line += carpark_details.values()
-                                line.append(carpark_information[carpark_number]["Address"])
-                                writer.writerow(line)
-                                no_of_lines += 1
-                        carpark_availability_address_file.close()
-                        print(f"{no_of_lines} lines were written to '{file_name}'")
+            elif option == 10:
+                no_of_lines = 2
+                headers = ["Carpark Number", "Total Lots", "Lots Available", "Address"]
+                file_name = "carpark-availability-with-address.csv"
+                carpark_availability = dict(sorted(carpark_availability.items(), \
+                                                    key=lambda carpark: int(carpark[1]["Total Lots"])))
+                if is_valid_file(file_name):
+                    print(f"Invalid option, {file_name} already exits")
+                    continue
+                carpark_availability_address_file = open(file_name, "w", newline='')
+                writer = csv.writer(carpark_availability_address_file)
+                carpark_availability_address_file.write(timestamp + "\n")
+                writer.writerow(headers)
+                for carpark_number, carpark_details in carpark_availability.items():
+                    if carpark_information.get(carpark_number) != None:
+                        line = [carpark_number] 
+                        for header in headers[1:3]:
+                            line.append(carpark_details[header])
+                        line.append(carpark_information[carpark_number]["Address"])
+                        writer.writerow(line)
+                        no_of_lines += 1
+                carpark_availability_address_file.close()
+                print(f"{no_of_lines} lines were written to '{file_name}'")
 
         else:
             print(f"Invalid option, select option 3 before selecting {option}")
