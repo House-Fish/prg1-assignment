@@ -100,15 +100,31 @@ def main():
         print(f"Option {option}: {MENU_DESCRIPTIONS[option]}")
 
         if option == 0: 
+            """
+            End Program
+            """
+            print("See you again, space cowbow!")
             break
         elif option == 1: 
+            """
+            Display the total number of carparks in 'carpark-information.csv'
+            """
             print(f"Total Number of carparks in '{cpi_file_name}': {str(get_total_number(carpark_information))}")
         elif option == 2:
+            """
+            Display the 'Carpark Number', 'Carpark Type' and 'Address' of basement carparks
+            """
+
+            #Define
             headers = ["Carpark Number", "Carpark Type", "Address"]
             spacing = get_spacing(headers)
             adjust = "<<<"
             total_number = 0
+
+            #Display table header
             print(generate_line(headers, spacing, adjust))
+
+            #Filter and Display table information
             for carpark, carpark_details in carpark_information.items():
                 if carpark_details["Carpark Type"] == "BASEMENT CAR PARK":
                     line_data = [carpark]
