@@ -1,0 +1,24 @@
+Option 0:
+Option 1: info
+Option 2: info
+Option 3: creates avail
+Option 4: avail
+Option 5: avail
+Option 6: avail + percent
+Option 7: avail + percent + info
+Option 8: avail + percent + info
+Option 9: avail + percent + info
+Option 10: avail + info
+
+MENU_DESCRIPTIONS = ["Exit",
+                     "Display Total Number of Carparks in 'carpark-information.csv'",
+                     "Display All Basement Carparks in 'carpark-information.csv'",
+                     "Read Carpark Availability Data File",
+                     "Print Total Number of Carparks in the File Read in [3]",
+                     "Display Carparks Without Available Lots",
+                     "Display Carparks With At Least x% Available Lots",
+                     "Display Addresses of Carparks With At Least x% Available Lots",
+                     "Display all information about a Carpark at a Address",
+                     "Display all information about the Carpark with the most Lots",
+                     "Write the Carpark Availability and Address to a new File"]
+
