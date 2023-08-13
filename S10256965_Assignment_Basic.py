@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#Lee Jia Yu - S10256965 - CSF01 - P06
 
 MENU_DESCRIPTIONS = ["Exit",
                      "Display Total Number of Carparks in 'carpark-information.csv'",
@@ -11,7 +12,7 @@ MENU_DESCRIPTIONS = ["Exit",
 
 def generate_menu(menu_description):
     """ 
-    Return the string formatted main menu.
+    Return the formatted main menu with option numbers.
 
         Parameters: 
             menu_description (list): A list of MENU_DESCRIPTIONS
@@ -27,7 +28,7 @@ def generate_menu(menu_description):
 
 def generate_line(values, spacings, alignments):
     """
-    Returns the spaced and aligned values in a string.
+    Returns the spaced and aligned values.
 
         Parameters: 
             values (list): A list of the values to be represented
@@ -78,7 +79,7 @@ def get_percentage():
         print("Invalid percentage, please enter a valid number between 0 and 100")
 
 def continue_hold():
-    #Ask the user to 'Enter' to continue the next round of the program.
+    #Ask the user to 'Enter' to continue the next iteration of the main loop.
     input("Enter to continue: ")
 
 def calculate_percentage(total_lots, lots_available):
@@ -143,22 +144,32 @@ def get_carpark_information(file_name):
             file_name (str): The name of the carpark information file
 
         Returns: 
-            carpark_information (list[dict]): The list of carparks from 'carpark-information.csv'
+            carpark_information (list[dict]): The list of carparks from file_name
     """
     carpark_information = []
     try:
         with open(file_name, "r") as carpark_information_file:
             headers = carpark_information_file.readline().strip("\n").split(",")
-            for values in carpark_information_file:
-                values = values.strip("\n").split(",")
-                address_index = len(headers) - 1 
-                if values[address_index][0] == '"':
-                    values[address_index] = ",".join(values[address_index:])
+            for line in carpark_information_file:
+                sentence = ""
+                values = []
+                within_quotes = False
+                for char in line.strip("\n"):
+                    if char == '"':
+                        within_quotes = not within_quotes
+                    elif char == ',' and not within_quotes:
+                        values.append(sentence.strip())
+                        sentence = ""
+                    else:
+                        sentence += char
+                if sentence:
+                    values.append(sentence.strip())
                 carpark = dict(zip(headers, values))
                 carpark_information.append(carpark)
     except FileNotFoundError:
         print(f"Invalid file name, {file_name} is not found.")
     else:
+        print(f"'{file_name}' was successfully read.")
         return carpark_information
 
 def display_total_number_of_carpark_information(file_name, carpark_information):
@@ -217,14 +228,19 @@ def get_carpark_availability_display_timestamp():
             with open(cpa_file_name, "r") as carpark_availability_file:
                 timestamp = carpark_availability_file.readline().strip("\n")
                 headers = carpark_availability_file.readline().strip("\n").split(",")
+                assert "Total Lots" in headers
                 for line in carpark_availability_file:
                     line = line.strip("\n").split(",")
                     carpark = dict(zip(headers, line))
                     carpark_availability.append(carpark)
         except FileNotFoundError:
-            print(f"Invalid file name, {cpa_file_name} is not found\n"
-                  "Make sure that it is within the same directory.")
+            print(f"Invalid file name, '{cpa_file_name}' is not found, make sure that it is within the same directory.")
+        except AssertionError: 
+            print(f"Invalid file name, '{cpa_file_name}' should contain the Total Lots at a carpark.")
+        except Exception as err: 
+            print(f"Error occurred: {err}")
         else:
+            print(f"'{cpa_file_name}' was successfully read.")
             print(timestamp)
             return carpark_availability, timestamp
 
@@ -242,7 +258,7 @@ def display_total_number_of_carpark_availability(carpark_availability):
 
 def display_carpark_without_lots(carpark_availability):
     """
-    Option 5: Prints information about the carparks with 0 lots available
+    Option 5: Prints the carpark numbers with 0 lots available
 
     Parameters: 
         carpark_availability (list[dict]): The carpark availability list from the file
@@ -262,7 +278,6 @@ def display_carpark_with_x_available_lots(carpark_availability, with_address = F
     Option 6 & 7: Prompts and prints information (w & w/o address) about the carparks that have 
     availability percentage over the users requirement. 
 
- 
     Parameters: 
         carpark_availability (list[dict]): The carpark availability list from the file
         with_address (bool): Whether the address should be displayed
@@ -304,7 +319,6 @@ def main():
         print(menu)
         option = get_option(MENU_DESCRIPTIONS)
         print(f"Option {option}: {MENU_DESCRIPTIONS[option]}")
-
         if option == 0: 
             break
         elif option == 1: 
@@ -315,18 +329,16 @@ def main():
             carpark_availability, timestamp = get_carpark_availability_display_timestamp()
             carpark_availability = append_addresses(carpark_availability, carpark_information)
             carpark_availability = append_percentages(carpark_availability)
-        elif carpark_availability != []: 
-            if option == 4:
-                display_total_number_of_carpark_availability(carpark_availability) 
-            elif option == 5: 
-                display_carpark_without_lots(carpark_availability)
-            elif option == 6:
-                display_carpark_with_x_available_lots(carpark_availability)
-            elif option == 7:
-                display_carpark_with_x_available_lots(carpark_availability, with_address=True)
-        else:
+        elif carpark_availability == []: 
             print(f"Invalid option, select option 3 before selecting {option}")
-
+        elif option == 4:
+            display_total_number_of_carpark_availability(carpark_availability) 
+        elif option == 5: 
+            display_carpark_without_lots(carpark_availability)
+        elif option == 6:
+            display_carpark_with_x_available_lots(carpark_availability)
+        elif option == 7:
+            display_carpark_with_x_available_lots(carpark_availability, with_address=True)
         continue_hold()
 
 if __name__ == "__main__":
